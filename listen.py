@@ -94,7 +94,7 @@ all_path = cnf["path"]
 all_data = [read_trunk(os.path.join(path, x))  for x in all_path]
 non_unique_count = cnf["non_unique_count"]
 
-
+key_status = {}
 for x in all_path:
     lk = os.path.basename(x).lower()
     v = all_path.index(x)
@@ -113,13 +113,14 @@ for kk in all_keys:
     
 
 def abc(x):
-    
+    global key_status
+    lk =  x.name.lower()
     if x.event_type != 'down':
+        key_status[lk] = 0
         return
     # 键盘映射
     # with open("1.txt", 'a') as fp:
     #     fp.write(f'"{x.name}",')
-    lk =  x.name.lower()
     try:
         if lk in all_index:
             data = all_data[all_index[lk]]
@@ -132,7 +133,9 @@ def abc(x):
         idx = random.randint(0, non_unique_count)
         all_index[lk] = idx
         data = all_data[all_index[lk]]
-    q.put(data)
+    if lk not in key_status or key_status[lk] == 0:
+        key_status[lk] = 1
+        q.put(data)
 
 def use_for_test(x):
     if x.event_type != 'down':
