@@ -9,24 +9,28 @@ from queue import Queue
 import numpy as np
 import string
 import random
-
-from torch import rand
+import win32clipboard as wc
+import win32con
+import win32gui, win32api
 
 # 声音目录
 path = 'sound'
 # 子目录
 key = 'bubbles2'
+key = 'mechanical4'
 # 线程通信队列
 q = Queue()
 # 每个循环播放声音的bytes
 chunk = 1024
-
+current_path = os.path.dirname(__file__)
 def load_json():
-    with open("sound.json", 'r') as fp:
+    with open(os.path.join(current_path, "sound.json"), 'r') as fp:
         return json.load(fp)
 def read_trunk(file_name):
     if not file_name.endswith(".wav"):
         file_name += ".wav"
+    file_name = os.path.join(current_path, file_name)
+    print(file_name)
     wf = wave.open(file_name, 'rb')
     data = wf.readframes(chunk*1024)  # 读取数据
     return data
@@ -55,7 +59,9 @@ def play():
     tt = load_json()[key][0]["path"][-1]
     if not tt.endswith(".wav"):
         tt += ".wav"
-    wf = wave.open(os.path.join(path, tt), 'rb')
+    print("xxx:", os.path.join(path, tt))
+    full_path = os.path.join(current_path, path, tt)
+    wf = wave.open(full_path, 'rb')
     p = pyaudio.PyAudio()
     stream = p.open(format=p.get_format_from_width(wf.getsampwidth()), channels=wf.getnchannels(),
                     rate=wf.getframerate(), output=True)
@@ -67,7 +73,7 @@ def play():
                 data = q.get_nowait()
                 back = data
             except:
-                if back and len(back) == 0:
+                if not back or (back and len(back) == 0):
                     data = q.get()
                     back = data
             if back:
@@ -156,12 +162,32 @@ def use_for_test(x):
         stream.close()
         p.terminate()  # 关闭 PyAudio
 
+
+def opt(ctx):
+    print(ctx)
+    wc.OpenClipboard()
+    try:
+        wc.EmptyClipboard()
+        wc.SetClipboardData(win32con.CF_UNICODETEXT, ctx)
+    except Exception as e:
+        print("异常:", str(e))
+    finally:
+        wc.CloseClipboard()
+def regist(key, ctx):
+    keyboard.add_hotkey(key, opt, (ctx,))
 t1 = threading.Thread(target=play)
 t1.start()
 # thread_pool = ThreadPoolExecutor(max_workers=3)
 # thread_pool.submit(play)
 # thread_pool.submit(play)
 # thread_pool.shutdown(wait=True)
+regist("ctrl+4", "/usr/local/shark-security/var/log/")
+regist("ctrl+5", "/usr/local/shark-security/etc/")
+regist("ctrl+6", "/usr/local/shark-security/etc/channel.d/")
+regist("ctrl+7", "/usr/local/shark/var/log")
+regist("ctrl+8", "/usr/local/shark/etc/")
+regist("ctrl+9", "/usr/local/shark/var/log/security_logs/")
+
 
 
 keyboard.hook(abc)
